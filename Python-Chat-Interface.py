@@ -1,10 +1,25 @@
 from tkinter import *
 import time
+import re
 import os
 import string
 import webbrowser
 
-saved_username = ["you"]
+saved_username = ["You"]
+
+# checks if username file exists, if not, makes one.
+if not os.path.isfile("usernames.txt"):
+    # doesnt exist, creates usernames.txt file
+    print('"username.txt" file doesn\'t exist. Creating new file.')
+    with open ("usernames.txt", 'wb') as file:
+        pass
+else:
+    # file exists, takes all existing usernames stored in file and adds them to saved_username list
+    print('"username.txt" file found.')
+    with open("usernames.txt", 'r') as file:
+        for line in file:
+            saved_username.append(line.replace("\n", ""))
+    pass
 
 
 class ChatInterface(Frame):
@@ -14,7 +29,8 @@ class ChatInterface(Frame):
         self.master = master
 
         # sets default bg for top level windows
-        self.tl_bg = "#FFFFFF"
+        self.tl_bg = "#EEEEEE"
+        self.tl_bg2 = "#EEEEEE"
         self.tl_fg = "#000000"
         self.font = "Verdana 10"
 
@@ -34,6 +50,16 @@ class ChatInterface(Frame):
         options = Menu(menu, tearoff=0)
         menu.add_cascade(label="Options", menu=options)
 
+        # username
+        username = Menu(options, tearoff=0)
+        options.add_cascade(label="Username", menu=username)
+        username.add_command(label="Change Username", command=self.change_username)
+        username.add_command(label="Default Username", command=self.default_username)
+        username.add_command(label="View Username History", command=self.view_username_history)
+        username.add_command(label="Clear Username History", command=self.clear_username_history)
+
+        options.add_separator()
+
         # font
         font = Menu(options, tearoff=0)
         options.add_cascade(label="Font", menu=font)
@@ -48,7 +74,10 @@ class ChatInterface(Frame):
         options.add_cascade(label="Color Theme", menu=color_theme)
         color_theme.add_command(label="Default", command=self.color_theme_default)
         color_theme.add_command(label="Night", command=self.color_theme_dark)
-        color_theme.add_command(label="Dark Blue", command=self.color_theme_dark_blue)
+        color_theme.add_command(label="Grey", command=self.color_theme_grey)
+        color_theme.add_command(label="Blue", command=self.color_theme_dark_blue)
+        color_theme.add_command(label="Pink", command=self.color_theme_pink)
+        color_theme.add_command(label="Turquoise", command=self.color_theme_turquoise)
         color_theme.add_command(label="Hacker", command=self.color_theme_hacker)
 
         # all to default
@@ -56,8 +85,8 @@ class ChatInterface(Frame):
 
         options.add_separator()
 
-        # change username
-        options.add_command(label="Change Username", command=self.change_username)
+        # default window size
+        options.add_command(label="Default Window Size", command=self.default_window_size)
 
     # Help
         help_option = Menu(menu, tearoff=0)
@@ -75,7 +104,7 @@ class ChatInterface(Frame):
         self.text_box_scrollbar = Scrollbar(self.text_frame, bd=0)
         self.text_box_scrollbar.pack(fill=Y, side=RIGHT)
 
-        # displays messages
+        # contains messages
         self.text_box = Text(self.text_frame, yscrollcommand=self.text_box_scrollbar.set, state=DISABLED,
                              bd=1, padx=6, pady=6, spacing3=8, wrap=WORD, bg=None, font="Verdana 10", relief=GROOVE,
                              width=10, height=1)
@@ -88,12 +117,12 @@ class ChatInterface(Frame):
 
         # entry field
         self.entry_field = Entry(self.entry_frame, bd=1, justify=LEFT)
-        self.entry_field.pack(side=BOTTOM, fill=X, padx=6, pady=6, ipady=3)
+        self.entry_field.pack(fill=X, padx=6, pady=6, ipady=3)
         # self.users_message = self.entry_field.get()
 
         # frame containing send button and emoji button
         self.send_button_frame = Frame(self.master, bd=0)
-        self.send_button_frame.pack(side=BOTTOM, fill=BOTH)
+        self.send_button_frame.pack(fill=BOTH)
 
         # send button
         self.send_button = Button(self.send_button_frame, text="Send", width=5, relief=GROOVE, bg='white',
@@ -107,6 +136,18 @@ class ChatInterface(Frame):
                                    bd=1, command=self.emoji_options, activebackground="#FFFFFF",
                                    activeforeground="#000000")
         self.emoji_button.pack(side=RIGHT, padx=6, pady=6, ipady=2)
+
+        self.last_sent_label(date="No messages sent.")
+
+    def last_sent_label(self, date):
+
+        try:
+            self.sent_label.destroy()
+        except AttributeError:
+            pass
+
+        self.sent_label = Label(self.entry_frame, font="Verdana 7", text=date, bg=self.tl_bg2, fg=self.tl_fg)
+        self.sent_label.pack(side=LEFT, fill=X, padx=3)
 
 # File functions
     def client_exit(self):
@@ -122,7 +163,7 @@ class ChatInterface(Frame):
         # gets current directory of program. creates "logs" folder to store chat logs.
         path = os.getcwd() + "\\logs\\"
         new_name = path + "log_" + time_file
-        saved = "Chat log saved to {}".format(new_name)
+        saved = "Chat log saved to {}\n".format(new_name)
 
         # saves chat log file
         try:
@@ -137,11 +178,12 @@ class ChatInterface(Frame):
         except UnicodeEncodeError:
             # displays error when trying to save chat with unicode. (fix in future)
             self.error_window("Unfortunately this chat can't be saved as of this \nversion "
-                              "because it contains unicode characters.", "unicode_error")
+                              "because it contains unicode characters.", type="simple_error", height='100')
 
     # clears chat
     def clear_chat(self):
         self.text_box.config(state=NORMAL)
+        self.last_sent_label(date="No messages sent.")
         self.text_box.delete(1.0, END)
         self.text_box.delete(1.0, END)
         self.text_box.config(state=DISABLED)
@@ -152,15 +194,21 @@ class ChatInterface(Frame):
         msg_box.configure(bg=self.tl_bg)
 
     def about_msg(self):
-        msg_box = Toplevel()
-        msg_box.configure(bg=self.tl_bg)
+        about_message = "This is a chat interface created in " \
+                        "Python by me, Jorge Soderberg. I started this " \
+                        "project to help continue to grow my skills " \
+                        "in python, especially with larger, more " \
+                        "complex class based programs. This is my " \
+                        "largest project with a UI so far. There are " \
+                        "still many features I would like to add in " \
+                        "the future."
+        self.error_window(about_message, type="simple_error", height='140')
 
     def src_code_msg(self):
         webbrowser.open('https://github.com/Josode/Python-Chat-Interface')
 
-
-    # creates top level window with error message
-    def error_window(self, error_msg, decider):
+# creates top level window with error message
+    def error_window(self, error_msg, type="simple_error", height='100', button_msg="Okay"):
         # try's to destroy change username window if its an error with username content
         try:
             self.change_username_window.destroy()
@@ -175,18 +223,35 @@ class ChatInterface(Frame):
         # gets main window width and height to position change username window
         half_root_width = root.winfo_x()
         half_root_height = root.winfo_y() + 60
-        placement = '400x100' + '+' + str(int(half_root_width)) + '+' + str(int(half_root_height))
+        placement = '400x' + str(height) + '+' + str(int(half_root_width)) + '+' + str(int(half_root_height))
         self.error_window_tl.geometry(placement)
 
-        too_long_frame = Frame(self.error_window_tl, bd=10, bg=self.tl_bg)
+        too_long_frame = Frame(self.error_window_tl, bd=5, bg=self.tl_bg)
         too_long_frame.pack()
-        error_label = Label(too_long_frame, text=error_msg, font=self.font,
-                            bg=self.tl_bg, fg=self.tl_fg)
-        error_label.pack(ipady=10)
-        okay_button = Button(too_long_frame, relief=GROOVE, bd=1, text="Okay", font=self.font, bg=self.tl_bg,
-                             fg=self.tl_fg, activebackground=self.tl_bg,
-                             activeforeground=self.tl_fg, command= lambda: self.close_error_window(decider))
-        okay_button.pack()
+
+        self.error_scrollbar = Scrollbar(too_long_frame, bd=0)
+        self.error_scrollbar.pack(fill=Y, side=RIGHT)
+
+        error_text = Text(too_long_frame, font=self.font, bg=self.tl_bg, fg=self.tl_fg, wrap=WORD, relief=FLAT,
+                          height=round(int(height)/30), yscrollcommand=self.error_scrollbar.set)
+        error_text.pack(pady=6, padx=6)
+        error_text.insert(INSERT, error_msg)
+        error_text.configure(state=DISABLED)
+        self.error_scrollbar.config(command=self.text_box.yview)
+
+        button_frame = Frame(too_long_frame, width=12)
+        button_frame.pack()
+
+        okay_button = Button(button_frame, relief=GROOVE, bd=1, text=button_msg, font=self.font, bg=self.tl_bg,
+                             fg=self.tl_fg, activebackground=self.tl_bg, width=5, height=1,
+                             activeforeground=self.tl_fg, command=lambda: self.close_error_window(type))
+        okay_button.pack(side=LEFT, padx=5)
+
+        if type == "username_history_error":
+            cancel_button = Button(button_frame, relief=GROOVE, bd=1, text="Cancel", font=self.font, bg=self.tl_bg,
+                             fg=self.tl_fg, activebackground=self.tl_bg, width=5, height=1,
+                             activeforeground=self.tl_fg, command=lambda: self.close_error_window("simple_error"))
+            cancel_button.pack(side=RIGHT, padx=5)
 
 # Send Message
 
@@ -195,8 +260,15 @@ class ChatInterface(Frame):
         saved_username.append(self.username_entry.get())
         self.change_username_main(username=saved_username[-1])
 
-    # gets passed username from input
-    def change_username_main(self, username):
+        # gets passed username from input
+
+    def change_username_main(self, username, default=False):
+
+        # takes saved_username list and writes all usernames into text file
+        def write_usernames():
+            with open('usernames.txt', 'w') as filer:
+                for item in saved_username:
+                    filer.write(item + "\n")
 
         # ensures username contains only letters and numbers
         found = False
@@ -205,19 +277,28 @@ class ChatInterface(Frame):
                 found = True
 
         if found is True:
-            self.error_window("Your username must contain only letters and numbers.", "username_error")
+            saved_username.remove(username)
+            self.error_window("Your username must contain only letters and numbers.", type="username_error",
+                              height='100')
         # username length limiter (limits to 20 characters or less and greater than 1 character)
         elif len(username) > 20:
-            self.error_window("Your username must be 20 characters or less.", "username_error")
+            saved_username.remove(username)
+            self.error_window("Your username must be 20 characters or less.", type="username_error", height='100')
 
         elif len(username) < 2:
-            self.error_window("Your username must be 2 characters or more.", "username_error")
+            saved_username.remove(username)
+            self.error_window("Your username must be 2 characters or more.", type="username_error", height='100')
 
-        elif username != "you":
+        # detects if user entered already current username
+        elif len(saved_username) >= 2 and username == saved_username[-2]:
+            self.error_window("That is already your current username!", type="username_error", height='100')
+
+        # used to detect when user wants default username.
+        else:
             # closes change username window, adds username to list, and displays notification
             self.close_username_window()
-            saved_username.append(username)
-            self.send_message_insert("Username changed to " + '"' + username + '".\n')
+            write_usernames()
+            self.send_message_insert("Username changed to " + '"' + username + '".')
 
     # allows "enter" key for sending msg
     def send_message_event(self, event):
@@ -230,7 +311,7 @@ class ChatInterface(Frame):
         user_input = self.entry_field.get()
 
         username = saved_username[-1] + ": "
-        message = (username, user_input, '\n')
+        message = (username, user_input)
         readable_msg = ''.join(message)
         readable_msg.strip('{')
         readable_msg.strip('}')
@@ -242,21 +323,47 @@ class ChatInterface(Frame):
 
     # inserts user input into text box
     def send_message_insert(self, message):
+        # tries to close emoji window if its open. If not, passes
+        try:
+            self.close_emoji()
+
+        except AttributeError:
+            pass
+
         self.text_box.configure(state=NORMAL)
-        self.text_box.insert(END, message)
+        self.text_box.insert(END, message + '\n')
+        self.last_sent_label(str(time.strftime( "Last message sent: " + '%B %d, %Y' + ' at ' + '%I:%M %p')))
         self.text_box.see(END)
         self.text_box.configure(state=DISABLED)
 
+    # closes change username window
+    def close_username_window(self):
+        self.change_username_window.destroy()
+
+    # decides type of error when i create an error window ( re-open change username window or not)
+    def close_error_window(self, type):
+        if type == "username_error":
+            self.error_window_tl.destroy()
+            self.change_username()
+        elif type == "simple_error":
+            self.error_window_tl.destroy()
+        elif type == "username_history_error":
+            self.error_window_tl.destroy()
+            self.clear_username_history_confirmed()
+        else:
+            print("Ya dingus jorge, you gave an unknown error type.")
+
 # enter emoticons
     def emoji_options(self):
-        self.selection = Toplevel(bg=self.tl_bg, )
-        self.selection.bind("<Return>", self.send_message_event)
-        selection_frame = Frame(self.selection, bd=4, bg=self.tl_bg)
+        # makes top level window positioned to the right and at the bottom of root window
+        self.emoji_selection_window = Toplevel(bg=self.tl_bg, )
+        self.emoji_selection_window.bind("<Return>", self.send_message_event)
+        selection_frame = Frame(self.emoji_selection_window, bd=4, bg=self.tl_bg)
         selection_frame.grid()
-        self.selection.focus_set()
-        self.selection.grab_set()
+        self.emoji_selection_window.focus_set()
+        self.emoji_selection_window.grab_set()
 
-        close_frame = Frame(self.selection)
+        close_frame = Frame(self.emoji_selection_window)
         close_frame.grid(sticky=S)
         close_button = Button(close_frame, text="Close", font="Verdana 9", relief=GROOVE, bg=self.tl_bg,
                               fg=self.tl_fg, activebackground=self.tl_bg,
@@ -264,16 +371,15 @@ class ChatInterface(Frame):
         close_button.grid(sticky=S)
 
         root_width = root.winfo_width()
-        root_height = root.winfo_height()
         root_pos_x = root.winfo_x()
         root_pos_y = root.winfo_y()
-        selection_width_x = self.selection.winfo_reqwidth()
-        selection_height_y = self.selection.winfo_reqheight()
+        selection_width_x = self.emoji_selection_window.winfo_reqwidth()
+        selection_height_y = self.emoji_selection_window.winfo_reqheight()
 
         position = '180x320' + '+' + str(root_pos_x+root_width) + '+' + str(root_pos_y)
-        self.selection.geometry(position)
-        self.selection.minsize(180, 320)
-        self.selection.maxsize(180, 320)
+        self.emoji_selection_window.geometry(position)
+        self.emoji_selection_window.minsize(180, 320)
+        self.emoji_selection_window.maxsize(180, 320)
 
         emoticon_1 = Button(selection_frame, bg=self.tl_bg, fg=self.tl_fg, text="☺",
                             activebackground=self.tl_bg, activeforeground=self.tl_fg,
@@ -379,10 +485,11 @@ class ChatInterface(Frame):
 
     def send_emoji(self, emoticon):
         self.entry_field.insert(END, emoticon)
-        self.close_emoji()
+        # following line would close emoji toplevel windwo, only allowing 1 emoji per opening of window
+        # self.close_emoji()
 
     def close_emoji(self):
-        self.selection.destroy()
+        self.emoji_selection_window.destroy()
 
 
 # Font options
@@ -422,36 +529,90 @@ class ChatInterface(Frame):
         self.send_button_frame.config(bg="#EEEEEE")
         self.send_button.config(bg="#FFFFFF", fg="#000000", activebackground="#FFFFFF", activeforeground="#000000")
         self.emoji_button.config(bg="#FFFFFF", fg="#000000", activebackground="#FFFFFF", activeforeground="#000000")
+        self.sent_label.config(bg="#EEEEEE", fg="#000000")
 
         self.tl_bg = "#FFFFFF"
+        self.tl_bg2 = "#EEEEEE"
         self.tl_fg = "#000000"
 
-    # Dark Blue
-    def color_theme_dark_blue(self):
-        self.master.config(bg="#081B2D")
-        self.text_frame.config(bg="#081B2D")
-        self.text_box.config(bg="#13283C", fg="#FFFFFF")
-        self.entry_frame.config(bg="#081B2D")
-        self.entry_field.config(bg="#13283C", fg="#FFFFFF", insertbackground="#FFFFFF")
-        self.send_button_frame.config(bg="#081B2D")
-        self.send_button.config(bg="#13283C", fg="#FFFFFF", activebackground="#13283C", activeforeground="#FFFFFF")
-        self.emoji_button.config(bg="#13283C", fg="#FFFFFF", activebackground="#13283C", activeforeground="#FFFFFF")
+    # Dark
+    def color_theme_dark(self):
+        self.master.config(bg="#2a2b2d")
+        self.text_frame.config(bg="#2a2b2d")
+        self.text_box.config(bg="#212121", fg="#FFFFFF")
+        self.entry_frame.config(bg="#2a2b2d")
+        self.entry_field.config(bg="#212121", fg="#FFFFFF", insertbackground="#FFFFFF")
+        self.send_button_frame.config(bg="#2a2b2d")
+        self.send_button.config(bg="#212121", fg="#FFFFFF", activebackground="#212121", activeforeground="#FFFFFF")
+        self.emoji_button.config(bg="#212121", fg="#FFFFFF", activebackground="#212121", activeforeground="#FFFFFF")
+        self.sent_label.config(bg="#2a2b2d", fg="#FFFFFF")
 
-        self.tl_bg = "#13283C"
+        self.tl_bg = "#212121"
+        self.tl_bg2 = "#2a2b2d"
         self.tl_fg = "#FFFFFF"
 
-    # Night
-    def color_theme_dark(self):
-        self.master.config(bg="#2E2E2E")
-        self.text_frame.config(bg="#2E2E2E")
-        self.text_box.config(bg="#171717", fg="#FFFFFF")
-        self.entry_frame.config(bg="#2E2E2E")
-        self.entry_field.config(bg="#171717", fg="#FFFFFF", insertbackground="#FFFFFF")
-        self.send_button_frame.config(bg="#2E2E2E")
-        self.send_button.config(bg="#171717", fg="#FFFFFF", activebackground="#171717", activeforeground="#FFFFFF")
-        self.emoji_button.config(bg="#171717", fg="#FFFFFF", activebackground="#171717", activeforeground="#FFFFFF")
+    # Grey
+    def color_theme_grey(self):
+        self.master.config(bg="#444444")
+        self.text_frame.config(bg="#444444")
+        self.text_box.config(bg="#4f4f4f", fg="#ffffff")
+        self.entry_frame.config(bg="#444444")
+        self.entry_field.config(bg="#4f4f4f", fg="#ffffff", insertbackground="#ffffff")
+        self.send_button_frame.config(bg="#444444")
+        self.send_button.config(bg="#4f4f4f", fg="#ffffff", activebackground="#4f4f4f", activeforeground="#ffffff")
+        self.emoji_button.config(bg="#4f4f4f", fg="#ffffff", activebackground="#4f4f4f", activeforeground="#ffffff")
+        self.sent_label.config(bg="#444444", fg="#ffffff")
 
-        self.tl_bg = "#171717"
+        self.tl_bg = "#4f4f4f"
+        self.tl_bg2 = "#444444"
+        self.tl_fg = "#ffffff"
+
+    # Blue
+    def color_theme_dark_blue(self):
+        self.master.config(bg="#263b54")
+        self.text_frame.config(bg="#263b54")
+        self.text_box.config(bg="#1c2e44", fg="#FFFFFF")
+        self.entry_frame.config(bg="#263b54")
+        self.entry_field.config(bg="#1c2e44", fg="#FFFFFF", insertbackground="#FFFFFF")
+        self.send_button_frame.config(bg="#263b54")
+        self.send_button.config(bg="#1c2e44", fg="#FFFFFF", activebackground="#1c2e44", activeforeground="#FFFFFF")
+        self.emoji_button.config(bg="#1c2e44", fg="#FFFFFF", activebackground="#1c2e44", activeforeground="#FFFFFF")
+        self.sent_label.config(bg="#263b54", fg="#FFFFFF")
+
+        self.tl_bg = "#1c2e44"
+        self.tl_bg2 = "#263b54"
+        self.tl_fg = "#FFFFFF"
+
+    # Pink
+    def color_theme_pink(self):
+        self.master.config(bg="#ffc1f2")
+        self.text_frame.config(bg="#ffc1f2")
+        self.text_box.config(bg="#ffe8fa", fg="#000000")
+        self.entry_frame.config(bg="#ffc1f2")
+        self.entry_field.config(bg="#ffe8fa", fg="#000000", insertbackground="#000000")
+        self.send_button_frame.config(bg="#ffc1f2")
+        self.send_button.config(bg="#ffe8fa", fg="#000000", activebackground="#ffe8fa", activeforeground="#000000")
+        self.emoji_button.config(bg="#ffe8fa", fg="#000000", activebackground="#ffe8fa", activeforeground="#000000")
+        self.sent_label.config(bg="#ffc1f2", fg="#000000")
+
+        self.tl_bg = "#ffe8fa"
+        self.tl_bg2 = "#ffc1f2"
+        self.tl_fg = "#000000"
+
+    # Turquoise
+    def color_theme_turquoise(self):
+        self.master.config(bg="#003333")
+        self.text_frame.config(bg="#003333")
+        self.text_box.config(bg="#669999", fg="#FFFFFF")
+        self.entry_frame.config(bg="#003333")
+        self.entry_field.config(bg="#669999", fg="#FFFFFF", insertbackground="#FFFFFF")
+        self.send_button_frame.config(bg="#003333")
+        self.send_button.config(bg="#669999", fg="#FFFFFF", activebackground="#669999", activeforeground="#FFFFFF")
+        self.emoji_button.config(bg="#669999", fg="#FFFFFF", activebackground="#669999", activeforeground="#FFFFFF")
+        self.sent_label.config(bg="#003333", fg="#FFFFFF")
+
+        self.tl_bg = "#669999"
+        self.tl_bg2 = "#003333"
         self.tl_fg = "#FFFFFF"
 
     # Hacker
@@ -464,8 +625,10 @@ class ChatInterface(Frame):
         self.send_button_frame.config(bg="#0F0F0F")
         self.send_button.config(bg="#0F0F0F", fg="#FFFFFF", activebackground="#0F0F0F", activeforeground="#FFFFFF")
         self.emoji_button.config(bg="#0F0F0F", fg="#FFFFFF", activebackground="#0F0F0F", activeforeground="#FFFFFF")
+        self.sent_label.config(bg="#0F0F0F", fg="#33FF33")
 
         self.tl_bg = "#0F0F0F"
+        self.tl_bg2 = "#0F0F0F"
         self.tl_fg = "#33FF33"
 
     # Default font and color theme
@@ -509,23 +672,48 @@ class ChatInterface(Frame):
                                activebackground=self.tl_bg, activeforeground=self.tl_fg)
         cancel_button.pack(side=RIGHT, padx=4, pady=3)
 
-    # closes change username window
-    def close_username_window(self):
-        self.change_username_window.destroy()
+# Use default username ("You")
+    def default_username(self):
+        saved_username.append("You")
+        self.send_message_insert("Username changed to default.")
 
-    # closes "username too long" error message and re-open's change username window
-    def close_error_window(self, decider):
-        if decider == "username_error":
-            self.error_window_tl.destroy()
-            self.change_username()
-        elif decider == "unicode_error":
-            self.error_window_tl.destroy()
-        else:
-            print("Ya dingus jorge, you gave an unknown error type.")
+# promps user to Clear username history (deletes usernames.txt file and clears saved_username list)
+    def clear_username_history(self):
+        self.error_window(error_msg="Are you sure you want to clear your username history?\n", button_msg="Clear",
+                          type="username_history_error", height="120")
+
+    def clear_username_history_confirmed(self):
+         os.remove("usernames.txt")
+         saved_username.clear()
+         saved_username.append("You")
+
+         self.send_message_insert("Username history cleared.")
+
+# opens window showing username history (possible temp feature)
+    def view_username_history(self):
+        with open("usernames.txt", 'r') as usernames:
+            view_usernames = str(usernames.readlines())
+
+        view_usernames = re.sub("[\[\]']", "", view_usernames)
+        view_usernames = view_usernames.replace("\\n", "")
+
+        self.error_window(error_msg="Username History: \n\n" + view_usernames, type="simple_error",
+                          button_msg="Close", height='150')
+
+# Default Window Size
+    def default_window_size(self):
+        root.geometry('400x300')
+
+        # scrolls to very bottom of textbox
+        def see_end():
+            self.text_box.configure(state=NORMAL)
+            self.text_box.see(END)
+            self.text_box.configure(state=DISABLED)
+        root.after(10, see_end)
 
 root = Tk()
 root.title("Chat GUI")
-root.minsize(250,200)
+root.minsize(400,200)
 root.geometry('400x300')
 
 a = ChatInterface(root)
