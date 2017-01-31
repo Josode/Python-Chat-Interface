@@ -13,6 +13,7 @@ if not os.path.isfile("usernames.txt"):
     print('"username.txt" file doesn\'t exist. Creating new file.')
     with open ("usernames.txt", 'wb') as file:
         pass
+
 else:
     # file exists, takes all existing usernames stored in file and adds them to saved_username list
     print('"username.txt" file found.')
@@ -20,6 +21,23 @@ else:
         for line in file:
             saved_username.append(line.replace("\n", ""))
     pass
+
+
+# checks if default_win_size file exists, if not, makes one.
+if not os.path.isfile("default_win_size.txt"):
+    # doesnt exist, creates default_win_size.txt file
+    print('"default_win_size.txt" file doesn\'t exist. Creating new file.')
+    with open("default_win_size.txt", 'wb') as file:
+        pass
+
+    default_window_size = "400x300"
+
+else:
+    # file exists, takes existing window size and defines it
+    print('"default_win_size.txt" file found.')
+    with open("default_win_size.txt", 'r') as file:
+        size = file.readlines()
+        default_window_size= ''.join(size)
 
 
 class ChatInterface(Frame):
@@ -53,7 +71,7 @@ class ChatInterface(Frame):
         # username
         username = Menu(options, tearoff=0)
         options.add_cascade(label="Username", menu=username)
-        username.add_command(label="Change Username", command=self.change_username)
+        username.add_command(label="Change Username", command=lambda: self.change_username(height=80))
         username.add_command(label="Default Username", command=self.default_username)
         username.add_command(label="View Username History", command=self.view_username_history)
         username.add_command(label="Clear Username History", command=self.clear_username_history)
@@ -84,6 +102,10 @@ class ChatInterface(Frame):
         options.add_command(label="Default layout", command=self.default_format)
 
         options.add_separator()
+
+        # change default window size
+        # change default window size
+        options.add_command(label="Change Default Window Size", command=self.change_default_window_size)
 
         # default window size
         options.add_command(label="Default Window Size", command=self.default_window_size)
@@ -344,7 +366,11 @@ class ChatInterface(Frame):
     def close_error_window(self, type):
         if type == "username_error":
             self.error_window_tl.destroy()
-            self.change_username()
+            self.change_username(height=80)
+        elif type == "dimension_error":
+            self.error_window_tl.destroy()
+            self.change_username(type="window_size", label='Enter "width x height" \n'
+                                                           "ex: 500x500", height=125)
         elif type == "simple_error":
             self.error_window_tl.destroy()
         elif type == "username_history_error":
@@ -636,10 +662,15 @@ class ChatInterface(Frame):
         self.font_change_default()
         self.color_theme_default()
 
-# Change Username
-    def change_username(self):
+# Change Username or window size window
+    def change_username(self, type="username", label=None, height=None):
         self.change_username_window = Toplevel()
-        self.change_username_window.bind("<Return>", self.change_username_main_event)
+
+        if type == "username":
+            self.change_username_window.bind("<Return>", self.change_username_main_event)
+        elif type == "window_size":
+            self.change_username_window.bind("<Return>", self.change_window_size_event)
+
         self.change_username_window.configure(bg=self.tl_bg)
         self.change_username_window.focus_set()
         self.change_username_window.grab_set()
@@ -647,12 +678,16 @@ class ChatInterface(Frame):
         # gets main window width and height to position change username window
         half_root_width = root.winfo_x()+100
         half_root_height = root.winfo_y()+60
-        placement = '180x70' + '+' + str(int(half_root_width)) + '+' + str(int(half_root_height))
+        placement = '180x' + str(height) + '+' + str(int(half_root_width)) + '+' + str(int(half_root_height))
         self.change_username_window.geometry(placement)
 
         # frame for entry field
         enter_username_frame = Frame(self.change_username_window, bg=self.tl_bg)
         enter_username_frame.pack(pady=5)
+
+        if label:
+            self.window_label = Label(enter_username_frame, text=label, fg=self.tl_fg)
+            self.window_label.pack(pady=4, padx=4)
 
         self.username_entry = Entry(enter_username_frame, width=22, bg=self.tl_bg, fg=self.tl_fg, bd=1,
                       insertbackground=self.tl_fg)
@@ -662,11 +697,19 @@ class ChatInterface(Frame):
         buttons_frame = Frame(self.change_username_window, bg=self.tl_bg)
         buttons_frame.pack()
 
+    # implement username/ size
+        if type == "username":
+            username_command = lambda: self.change_username_main(self.username_entry.get())
+        elif type == "window_size":
+            username_command = lambda: self.change_window_size_main(self.username_entry.get())
+
         change_button = Button(buttons_frame, relief=GROOVE, text="Change", width=8, bg=self.tl_bg, bd=1,
-                        fg=self.tl_fg, activebackground=self.tl_bg, activeforeground=self.tl_fg,
-                        command=lambda: self.change_username_main(self.username_entry.get()))
+                               fg=self.tl_fg, activebackground=self.tl_bg, activeforeground=self.tl_fg,
+                               command=username_command)
         change_button.pack(side=LEFT, padx=4, pady=3)
 
+
+    # cancel
         cancel_button = Button(buttons_frame, relief=GROOVE, text="Cancel", width=8, bg=self.tl_bg, bd=1,
                                fg=self.tl_fg, command=self.close_username_window,
                                activebackground=self.tl_bg, activeforeground=self.tl_fg)
@@ -700,9 +743,66 @@ class ChatInterface(Frame):
         self.error_window(error_msg="Username History: \n\n" + view_usernames, type="simple_error",
                           button_msg="Close", height='150')
 
-# Default Window Size
+# Change Default Window Size
+    # called from options, creates window to input dimensions
+    def change_default_window_size(self):
+        self.change_username(type="window_size", label='Enter "width x height" \n'
+                                                       "ex: 500x500", height=125)
+
+    # event window, also gets input and checks if it's valid to use as dimensions
+    def change_window_size_event(self, event):
+        dimensions_get = self.username_entry.get()
+
+        listed = list(dimensions_get)
+        try:
+            x_index = listed.index("x")
+
+            # formats height and width into seperate int's
+            num_1 = int(''.join(listed[0:x_index]))
+            num_2 = int(''.join(listed[x_index + 1:]))
+
+        except ValueError or UnboundLocalError:
+            self.error_window(
+                error_msg="Invalid dimensions specified. \nPlease Use the format shown in the example.",
+                type="dimension_error", height='125')
+            self.close_username_window()
+
+        # checks that its not too big or too small
+        try:
+            if num_1 > 3840 or num_2 > 2160 or num_1 < 360 or num_2 < 200:
+                self.error_window(error_msg="Dimensions you specified are invalid.\n"
+                                            "Maximum dimensions are 3840 x 2160. \n"
+                                            "Minimum dimensions are 360 x 200.",
+                                  type="dimension_error", height="140")
+            else:
+                self.change_window_size_main(dimensions_get)
+        except:
+            pass
+
+    # change size and saves new default into txt file to remember across sessions
+    def change_window_size_main(self, window_size):
+        window_size = window_size.lower().replace(" ", "")
+
+        root.geometry(window_size)
+
+        with open("default_win_size.txt", 'w') as file:
+            print("New default window size set: " + window_size)
+            file.write(window_size)
+
+        self.close_username_window()
+
+        self.send_message_insert("Default window size changed to " + window_size + ".")
+
+# return to default window size
     def default_window_size(self):
-        root.geometry('400x300')
+
+        # gets custom default win size from file
+        with open("default_win_size.txt", 'r') as file:
+            size = file.readlines()
+            default_window_size = ''.join(size)
+
+        root.geometry(default_window_size)
+        print(default_window_size)
 
         # scrolls to very bottom of textbox
         def see_end():
@@ -713,8 +813,9 @@ class ChatInterface(Frame):
 
 root = Tk()
 root.title("Chat GUI")
-root.minsize(400,200)
-root.geometry('400x300')
+root.geometry(default_window_size)
+print(default_window_size)
+root.minsize(360,200)
 
 a = ChatInterface(root)
 
