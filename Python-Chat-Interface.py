@@ -3,20 +3,19 @@ import time
 import re
 import os
 import string
-import webbrowser
 
-saved_username = ["You"]
+saved_username = ["vulgo temporario"]
 
 # checks if username file exists, if not, makes one.
 if not os.path.isfile("usernames.txt"):
     # doesnt exist, creates usernames.txt file
-    print('"username.txt" file doesn\'t exist. Creating new file.')
+    print('"usernames.txt" Arquivo não existe. Criando novo arquivo.')
     with open ("usernames.txt", 'wb') as file:
         pass
 
 else:
     # file exists, takes all existing usernames stored in file and adds them to saved_username list
-    print('"username.txt" file found.')
+    print('"usernames.txt" Arquivo encontrado.')
     with open("usernames.txt", 'r') as file:
         for line in file:
             saved_username.append(line.replace("\n", ""))
@@ -26,15 +25,15 @@ else:
 # checks if default_win_size file exists, if not, makes one.
 if not os.path.isfile("default_win_size.txt"):
     # doesnt exist, creates default_win_size.txt file
-    print('"default_win_size.txt" file doesn\'t exist. Creating new file.')
+    print('"default_win_size.txt" Arquivo não existe. Criando novo arquivo.')
     with open("default_win_size.txt", 'wb') as file:
         pass
 
-    default_window_size = "400x300"
+    default_window_size = "500x200"
 
 else:
     # file exists, takes existing window size and defines it
-    print('"default_win_size.txt" file found.')
+    print('"default_win_size.txt" Arquivo encontrado.')
     with open("default_win_size.txt", 'r') as file:
         size = file.readlines()
         default_window_size= ''.join(size)
@@ -58,30 +57,30 @@ class ChatInterface(Frame):
 
     # File
         file = Menu(menu, tearoff=0)
-        menu.add_cascade(label="File", menu=file)
-        file.add_command(label="Save Chat Log", command=self.save_chat)
-        file.add_command(label="Clear Chat", command=self.clear_chat)
+        menu.add_cascade(label="Arquivo", menu=file)
+        file.add_command(label="Salvar Chat Log", command=self.save_chat)
+        file.add_command(label="Limpar Chat", command=self.clear_chat)
         file.add_separator()
-        file.add_command(label="Exit", command=self.client_exit)
+        file.add_command(label="Sair", command=self.client_exit)
 
     # Options
         options = Menu(menu, tearoff=0)
-        menu.add_cascade(label="Options", menu=options)
+        menu.add_cascade(label="Opções", menu=options)
 
         # username
         username = Menu(options, tearoff=0)
-        options.add_cascade(label="Username", menu=username)
-        username.add_command(label="Change Username", command=lambda: self.change_username(height=80))
-        username.add_command(label="Default Username", command=self.default_username)
-        username.add_command(label="View Username History", command=self.view_username_history)
-        username.add_command(label="Clear Username History", command=self.clear_username_history)
+        options.add_cascade(label="Usuario", menu=username)
+        username.add_command(label="Alterar Usuário", command=lambda: self.change_username(height=80))
+        username.add_command(label="Usuário Padrão", command=self.default_username)
+        username.add_command(label="Ver Histórico do Usuário", command=self.view_username_history)
+        username.add_command(label="Limpar Histórico do Usuário", command=self.clear_username_history)
 
         options.add_separator()
 
         # font
         font = Menu(options, tearoff=0)
-        options.add_cascade(label="Font", menu=font)
-        font.add_command(label="Default", command=self.font_change_default)
+        options.add_cascade(label="Fonte", menu=font)
+        font.add_command(label="Padrão", command=self.font_change_default)
         font.add_command(label="Times", command=self.font_change_times)
         font.add_command(label="System", command=self.font_change_system)
         font.add_command(label="Helvetica", command=self.font_change_helvetica)
@@ -89,33 +88,26 @@ class ChatInterface(Frame):
 
         # color theme
         color_theme = Menu(options, tearoff=0)
-        options.add_cascade(label="Color Theme", menu=color_theme)
-        color_theme.add_command(label="Default", command=self.color_theme_default)
-        color_theme.add_command(label="Night", command=self.color_theme_dark)
-        color_theme.add_command(label="Grey", command=self.color_theme_grey)
-        color_theme.add_command(label="Blue", command=self.color_theme_dark_blue)
-        color_theme.add_command(label="Pink", command=self.color_theme_pink)
-        color_theme.add_command(label="Turquoise", command=self.color_theme_turquoise)
+        options.add_cascade(label="Tema", menu=color_theme)
+        color_theme.add_command(label="Padrão", command=self.color_theme_default)
+        color_theme.add_command(label="Escuro", command=self.color_theme_dark)
+        color_theme.add_command(label="Cinza", command=self.color_theme_grey)
+        color_theme.add_command(label="Azul", command=self.color_theme_dark_blue)
+        color_theme.add_command(label="Rosa", command=self.color_theme_pink)
+        color_theme.add_command(label="Turquesa", command=self.color_theme_turquoise)
         color_theme.add_command(label="Hacker", command=self.color_theme_hacker)
 
         # all to default
-        options.add_command(label="Default layout", command=self.default_format)
+        options.add_command(label="Layout Padrão", command=self.default_format)
 
         options.add_separator()
 
         # change default window size
         # change default window size
-        options.add_command(label="Change Default Window Size", command=self.change_default_window_size)
+        options.add_command(label="Alterar Padrão de Dimensões", command=self.change_default_window_size)
 
         # default window size
-        options.add_command(label="Default Window Size", command=self.default_window_size)
-
-    # Help
-        help_option = Menu(menu, tearoff=0)
-        menu.add_cascade(label="Help", menu=help_option)
-        help_option.add_command(label="Features", command=self.features_msg)
-        help_option.add_command(label="About", command=self.about_msg)
-        help_option.add_command(label="Source Code", command=self.src_code_msg)
+        options.add_command(label="Padrão de Dimensões", command=self.default_window_size)
 
     # Chat interface
         # frame containing text box with messages and scrollbar
@@ -147,7 +139,7 @@ class ChatInterface(Frame):
         self.send_button_frame.pack(fill=BOTH)
 
         # send button
-        self.send_button = Button(self.send_button_frame, text="Send", width=5, relief=GROOVE, bg='white',
+        self.send_button = Button(self.send_button_frame, text="Enviar", width=5, relief=GROOVE, bg='white',
                                   bd=1, command=lambda: self.send_message(None), activebackground="#FFFFFF",
                                   activeforeground="#000000")
         self.send_button.pack(side=LEFT, ipady=2)
@@ -159,7 +151,7 @@ class ChatInterface(Frame):
                                    activeforeground="#000000")
         self.emoji_button.pack(side=RIGHT, padx=6, pady=6, ipady=2)
 
-        self.last_sent_label(date="No messages sent.")
+        self.last_sent_label(date="Nenhuma mensagem enviada.")
 
     def last_sent_label(self, date):
 
@@ -185,7 +177,7 @@ class ChatInterface(Frame):
         # gets current directory of program. creates "logs" folder to store chat logs.
         path = os.getcwd() + "\\logs\\"
         new_name = path + "log_" + time_file
-        saved = "Chat log saved to {}\n".format(new_name)
+        saved = "Chat salvo {}\n".format(new_name)
 
         # saves chat log file
         try:
@@ -199,38 +191,18 @@ class ChatInterface(Frame):
 
         except UnicodeEncodeError:
             # displays error when trying to save chat with unicode. (fix in future)
-            self.error_window("Unfortunately this chat can't be saved as of this \nversion "
-                              "because it contains unicode characters.", type="simple_error", height='100')
+            self.error_window("Não vai dar pra salvar não \nversion "
+                              "contém caractéres >>zuados<<.", type="simple_error", height='100')
 
     # clears chat
     def clear_chat(self):
         self.text_box.config(state=NORMAL)
-        self.last_sent_label(date="No messages sent.")
+        self.last_sent_label(date="Nenhuma mensagem enviada.")
         self.text_box.delete(1.0, END)
         self.text_box.delete(1.0, END)
         self.text_box.config(state=DISABLED)
-
-# Help functions
-    def features_msg(self):
-        msg_box = Toplevel()
-        msg_box.configure(bg=self.tl_bg)
-
-    def about_msg(self):
-        about_message = "This is a chat interface created in " \
-                        "Python by me, Jorge Soderberg. I started this " \
-                        "project to help continue to grow my skills " \
-                        "in python, especially with larger, more " \
-                        "complex class based programs. This is my " \
-                        "largest project with a UI so far. There are " \
-                        "still many features I would like to add in " \
-                        "the future."
-        self.error_window(about_message, type="simple_error", height='140')
-
-    def src_code_msg(self):
-        webbrowser.open('https://github.com/Josode/Python-Chat-Interface')
-
 # creates top level window with error message
-    def error_window(self, error_msg, type="simple_error", height='100', button_msg="Okay"):
+    def error_window(self, error_msg, type="simple_error", height='100', button_msg="Daora"):
         # try's to destroy change username window if its an error with username content
         try:
             self.change_username_window.destroy()
@@ -270,7 +242,7 @@ class ChatInterface(Frame):
         okay_button.pack(side=LEFT, padx=5)
 
         if type == "username_history_error":
-            cancel_button = Button(button_frame, relief=GROOVE, bd=1, text="Cancel", font=self.font, bg=self.tl_bg,
+            cancel_button = Button(button_frame, relief=GROOVE, bd=1, text="Cancelar", font=self.font, bg=self.tl_bg,
                              fg=self.tl_fg, activebackground=self.tl_bg, width=5, height=1,
                              activeforeground=self.tl_fg, command=lambda: self.close_error_window("simple_error"))
             cancel_button.pack(side=RIGHT, padx=5)
@@ -300,27 +272,27 @@ class ChatInterface(Frame):
 
         if found is True:
             saved_username.remove(username)
-            self.error_window("Your username must contain only letters and numbers.", type="username_error",
+            self.error_window("Seu nome de usuário deve ter apenas letras e/ou números.", type="username_error",
                               height='100')
         # username length limiter (limits to 20 characters or less and greater than 1 character)
         elif len(username) > 20:
             saved_username.remove(username)
-            self.error_window("Your username must be 20 characters or less.", type="username_error", height='100')
+            self.error_window("Seu nome de usuário deve ter até 20 caractéres ou menos.", type="username_error", height='100')
 
         elif len(username) < 2:
             saved_username.remove(username)
-            self.error_window("Your username must be 2 characters or more.", type="username_error", height='100')
+            self.error_window("Seu nome de usuário deve ter mais de 2 caractéres, imbecil.", type="username_error", height='100')
 
         # detects if user entered already current username
         elif len(saved_username) >= 2 and username == saved_username[-2]:
-            self.error_window("That is already your current username!", type="username_error", height='100')
+            self.error_window("Este é seu nome de usuário atual, idiota!", type="username_error", height='100')
 
         # used to detect when user wants default username.
         else:
             # closes change username window, adds username to list, and displays notification
             self.close_username_window()
             write_usernames()
-            self.send_message_insert("Username changed to " + '"' + username + '".')
+            self.send_message_insert("Usuário alterado para " + '"' + username + '".')
 
     # allows "enter" key for sending msg
     def send_message_event(self, event):
@@ -354,7 +326,7 @@ class ChatInterface(Frame):
 
         self.text_box.configure(state=NORMAL)
         self.text_box.insert(END, message + '\n')
-        self.last_sent_label(str(time.strftime( "Last message sent: " + '%B %d, %Y' + ' at ' + '%I:%M %p')))
+        self.last_sent_label(str(time.strftime( "Última mensagem enviada: " + '%B %d, %Y' + ' at ' + '%I:%M %p')))
         self.text_box.see(END)
         self.text_box.configure(state=DISABLED)
 
@@ -369,7 +341,7 @@ class ChatInterface(Frame):
             self.change_username(height=80)
         elif type == "dimension_error":
             self.error_window_tl.destroy()
-            self.change_username(type="window_size", label='Enter "width x height" \n'
+            self.change_username(type="window_size", label='Entre "width x height" \n'
                                                            "ex: 500x500", height=125)
         elif type == "simple_error":
             self.error_window_tl.destroy()
@@ -377,7 +349,7 @@ class ChatInterface(Frame):
             self.error_window_tl.destroy()
             self.clear_username_history_confirmed()
         else:
-            print("Ya dingus jorge, you gave an unknown error type.")
+            print("Parabéns Idiota!!! Erro desconhecido.")
 
 # enter emoticons
     def emoji_options(self):
@@ -391,7 +363,7 @@ class ChatInterface(Frame):
 
         close_frame = Frame(self.emoji_selection_window)
         close_frame.grid(sticky=S)
-        close_button = Button(close_frame, text="Close", font="Verdana 9", relief=GROOVE, bg=self.tl_bg,
+        close_button = Button(close_frame, text="Fechar", font="Verdana 9", relief=GROOVE, bg=self.tl_bg,
                               fg=self.tl_fg, activebackground=self.tl_bg,
                               activeforeground=self.tl_fg, command=self.close_emoji)
         close_button.grid(sticky=S)
@@ -703,14 +675,14 @@ class ChatInterface(Frame):
         elif type == "window_size":
             username_command = lambda: self.change_window_size_main(self.username_entry.get())
 
-        change_button = Button(buttons_frame, relief=GROOVE, text="Change", width=8, bg=self.tl_bg, bd=1,
+        change_button = Button(buttons_frame, relief=GROOVE, text="Alterar", width=8, bg=self.tl_bg, bd=1,
                                fg=self.tl_fg, activebackground=self.tl_bg, activeforeground=self.tl_fg,
                                command=username_command)
         change_button.pack(side=LEFT, padx=4, pady=3)
 
 
     # cancel
-        cancel_button = Button(buttons_frame, relief=GROOVE, text="Cancel", width=8, bg=self.tl_bg, bd=1,
+        cancel_button = Button(buttons_frame, relief=GROOVE, text="Cancelar", width=8, bg=self.tl_bg, bd=1,
                                fg=self.tl_fg, command=self.close_username_window,
                                activebackground=self.tl_bg, activeforeground=self.tl_fg)
         cancel_button.pack(side=RIGHT, padx=4, pady=3)
@@ -718,19 +690,19 @@ class ChatInterface(Frame):
 # Use default username ("You")
     def default_username(self):
         saved_username.append("You")
-        self.send_message_insert("Username changed to default.")
+        self.send_message_insert("Usuário local alterado.")
 
 # promps user to Clear username history (deletes usernames.txt file and clears saved_username list)
     def clear_username_history(self):
-        self.error_window(error_msg="Are you sure you want to clear your username history?\n", button_msg="Clear",
+        self.error_window(error_msg="Tem certeza de que deseja limpar o histórico?\n", button_msg="Limpar",
                           type="username_history_error", height="120")
 
     def clear_username_history_confirmed(self):
          os.remove("usernames.txt")
          saved_username.clear()
-         saved_username.append("You")
+         saved_username.append("Você")
 
-         self.send_message_insert("Username history cleared.")
+         self.send_message_insert("Histórico limpo.")
 
 # opens window showing username history (possible temp feature)
     def view_username_history(self):
@@ -740,13 +712,13 @@ class ChatInterface(Frame):
         view_usernames = re.sub("[\[\]']", "", view_usernames)
         view_usernames = view_usernames.replace("\\n", "")
 
-        self.error_window(error_msg="Username History: \n\n" + view_usernames, type="simple_error",
-                          button_msg="Close", height='150')
+        self.error_window(error_msg="Histórico de Usuário: \n\n" + view_usernames, type="simple_error",
+                          button_msg="Fechar", height='150')
 
 # Change Default Window Size
     # called from options, creates window to input dimensions
     def change_default_window_size(self):
-        self.change_username(type="window_size", label='Enter "width x height" \n'
+        self.change_username(type="window_size", label='Defina "largura x altura" \n'
                                                        "ex: 500x500", height=125)
 
     # event window, also gets input and checks if it's valid to use as dimensions
@@ -763,16 +735,16 @@ class ChatInterface(Frame):
 
         except ValueError or UnboundLocalError:
             self.error_window(
-                error_msg="Invalid dimensions specified. \nPlease Use the format shown in the example.",
+                error_msg="Dimensões específicadas são inválidas. \nTente usar o formato do exemplo: ",
                 type="dimension_error", height='125')
             self.close_username_window()
 
         # checks that its not too big or too small
         try:
             if num_1 > 3840 or num_2 > 2160 or num_1 < 360 or num_2 < 200:
-                self.error_window(error_msg="Dimensions you specified are invalid.\n"
-                                            "Maximum dimensions are 3840 x 2160. \n"
-                                            "Minimum dimensions are 360 x 200.",
+                self.error_window(error_msg="Dimensões específicadas são inválidas.\n"
+                                            "Máximo é 3840 x 2160. \n"
+                                            "Mínimo é 360 x 200.",
                                   type="dimension_error", height="140")
             else:
                 self.change_window_size_main(dimensions_get)
@@ -786,12 +758,12 @@ class ChatInterface(Frame):
         root.geometry(window_size)
 
         with open("default_win_size.txt", 'w') as file:
-            print("New default window size set: " + window_size)
+            print("Novas dimensões de janela: " + window_size)
             file.write(window_size)
 
         self.close_username_window()
 
-        self.send_message_insert("Default window size changed to " + window_size + ".")
+        self.send_message_insert("Dimensão padrão de janela alterada para: " + window_size + ".")
 
 # return to default window size
     def default_window_size(self):
@@ -812,7 +784,7 @@ class ChatInterface(Frame):
         root.after(10, see_end)
 
 root = Tk()
-root.title("Chat GUI")
+root.title("Chat do Sexo GRÁTIS!!!")
 root.geometry(default_window_size)
 print(default_window_size)
 root.minsize(360,200)
